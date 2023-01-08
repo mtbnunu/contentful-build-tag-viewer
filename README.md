@@ -1,6 +1,9 @@
 # Contentful App - Build Tag Viewer
- 
- Helps display build tag images in sidebar
+
+  [![Install to Contentful](https://www.ctfstatic.com/button/install-small.svg)](https://app.contentful.com/deeplink?link=apps&id=79NbtgXsYJuJtkpjV70jAD)
+
+Display images such as build/release informations in sidebar
+
 
  ![Example](readme/image.png)
 
