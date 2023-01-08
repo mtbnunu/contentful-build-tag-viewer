@@ -1,61 +1,88 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { AppExtensionSDK } from "@contentful/app-sdk";
-import { Heading, Form, Paragraph, Flex } from "@contentful/f36-components";
+import {
+  Heading,
+  Form,
+  Paragraph,
+  Flex,
+  Textarea,
+} from "@contentful/f36-components";
 import { css } from "emotion";
 import { /* useCMA, */ useSDK } from "@contentful/react-apps-toolkit";
+import { Config } from "../interface";
 
 export interface AppInstallationParameters {}
 
 const ConfigScreen = () => {
-  const [parameters, setParameters] = useState<AppInstallationParameters>({});
+  const [parameters, setParameters] = useState<AppInstallationParameters>();
+  const [error, setError] = useState<string | null>(null);
+
   const sdk = useSDK<AppExtensionSDK>();
-  /*
-     To use the cma, inject it as follows.
-     If it is not needed, you can remove the next line.
-  */
-  // const cma = useCMA();
 
   const onConfigure = useCallback(async () => {
-    // This method will be called when a user clicks on "Install"
-    // or "Save" in the configuration screen.
-    // for more details see https://www.contentful.com/developers/docs/extensibility/ui-extensions/sdk-reference/#register-an-app-configuration-hook
-
-    // Get current the state of EditorInterface and other entities
-    // related to this app installation
     const currentState = await sdk.app.getCurrentState();
 
     return {
-      // Parameters to be persisted as the app configuration.
       parameters,
-      // In case you don't want to submit any update to app
-      // locations, you can just pass the currentState as is
       targetState: currentState,
     };
   }, [parameters, sdk]);
 
   useEffect(() => {
-    // `onConfigure` allows to configure a callback to be
-    // invoked when a user attempts to install the app or update
-    // its configuration.
     sdk.app.onConfigure(() => onConfigure());
   }, [sdk, onConfigure]);
 
   useEffect(() => {
     (async () => {
-      // Get current parameters of the app.
-      // If the app is not installed yet, `parameters` will be `null`.
-      const currentParameters: AppInstallationParameters | null =
-        await sdk.app.getParameters();
+      const currentParameters: Config | null = await sdk.app.getParameters();
 
       if (currentParameters) {
         setParameters(currentParameters);
+      } else {
+        setParameters({
+          pollingInterval: 5000,
+          images: [{ url: "https://placekitten.com/g/100/100" }],
+        });
       }
 
-      // Once preparation has finished, call `setReady` to hide
-      // the loading screen and present the app to a user.
       sdk.app.setReady();
     })();
   }, [sdk]);
+
+  const exampleConfig = `{
+    "pollingInterval": 5000, //default polling interval (milliseconds)
+    "images": [
+      {
+        "url": "https://placekitten.com/200/300", // image url
+        "pollingInterval": 1000 //override polling interval
+      },
+      {
+        "url": "https://placekitten.com/200/200", // image url
+        "condition": {
+          "tag": "tagId" // display only when entry has this tag
+        }
+      },
+      {
+        "url": "https://placekitten.com/300/100",
+        "condition": {
+          "id": "ASDF1234567ASDF" // display only when entry id is this
+        }
+      },
+      {
+        "urlField": "showThisImageField" // use the value of this field as url
+      },
+    ],
+  }`;
+
+  const updateParams = (v: string) => {
+    setError(null);
+    try {
+      const value = JSON.parse(v);
+      setParameters(value);
+    } catch (e: any) {
+      setError(e.toString());
+    }
+  };
 
   return (
     <Flex
@@ -64,9 +91,18 @@ const ConfigScreen = () => {
     >
       <Form>
         <Heading>App Config</Heading>
-        <Paragraph>
-          Welcome to your contentful app. This is your config page.
-        </Paragraph>
+        <Paragraph>Enter config as json. See example below</Paragraph>
+        {error && <Paragraph style={{ color: "red" }}>{error}</Paragraph>}
+        {
+          <Textarea
+            style={{ height: 600 }}
+            onChange={(e) => updateParams(e.target.value)}
+            defaultValue={JSON.stringify(parameters, null, 2)}
+          ></Textarea>
+        }
+        <hr></hr>
+        <Paragraph>Example Config: </Paragraph>
+        <code style={{ whiteSpace: "pre" }}>{exampleConfig}</code>
       </Form>
     </Flex>
   );
