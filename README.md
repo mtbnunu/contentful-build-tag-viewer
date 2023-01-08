@@ -12,5 +12,5 @@
  - Dynamic Image url from entry (using a field)
  
  ### Todo
- [ ] Color format config screen
- [ ] move away from json based config screen
+ - [ ] Color format config screen
+ - [ ] move away from json based config screen
